@@ -1,9 +1,5 @@
 const pdfjsLib = require('pdfjs-dist');
 
-function documentToSvg(pdfDocument) {
-
-}
-
 function pdfToDocument(pdfBuffer) {
     return pdfjsLib.getDocument({
         data: pdfBuffer
@@ -11,4 +7,3 @@ function pdfToDocument(pdfBuffer) {
 }
 
 module.exports.pdfToDocument    = pdfToDocument;
-module.exports.documentToSvg    = documentToSvg;
