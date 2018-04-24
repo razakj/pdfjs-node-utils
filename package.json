@@ -1,0 +1,29 @@
+{
+  "name": "pdfjs-node-utils",
+  "version": "0.0.1",
+  "description": "PDF.js utilities for use with Node.JS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razakj/pdfjs-node-utils.git"
+  },
+  "keywords": [
+    "PDF",
+    "PDFJS",
+    "SVG",
+    "NodeJS"
+  ],
+  "author": "Jakub Razak",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/razakj/pdfjs-node-utils/issues"
+  },
+  "homepage": "https://github.com/razakj/pdfjs-node-utils#readme",
+  "dependencies": {
+    "jsdom": "^11.9.0",
+    "pdfjs-dist": "^2.0.489"
+  }
+}
