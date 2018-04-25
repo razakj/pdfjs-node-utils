@@ -2,7 +2,8 @@ const pdfjsLib = require('pdfjs-dist');
 
 function pdfToDocument(pdfBuffer) {
     return pdfjsLib.getDocument({
-        data: pdfBuffer
+        data                        : pdfBuffer,
+        verbosity                   : 0
     });
 }
 

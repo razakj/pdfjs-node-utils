@@ -1,5 +1,5 @@
-const Canvas    = require('canvas');
 const pdfjsLib  = require('pdfjs-dist');
+const {JSDOM}   = require('jsdom');
 
 function pageToPng(pdfDocument, pageNumber, {
     scale           = 1.0
@@ -7,15 +7,36 @@ function pageToPng(pdfDocument, pageNumber, {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
 
         const viewport          = pdfPage.getViewport(scale);
-        const canvas            = new Canvas(viewport.width, viewport.height);
+        const canvas            = document.createElement('canvas');
+
+        canvas.width            = viewport.width;
+        canvas.height           = viewport.height;
+
         const context           = canvas.getContext('2d');
 
-
         return pdfPage.render({
-            canvasContext: context,
-            viewport: viewport
+            canvasContext   : context,
+            viewport        : viewport
         }).then(()=>{
-            return canvas.toBuffer();
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(function(blob) {
+                    try {
+                        const {window} = new JSDOM();
+                        const reader = new window.FileReader();
+
+                        reader.addEventListener('loadend', (ev) => {
+                            if(ev.error) return reject(ev.error);
+                            return resolve(Buffer.from(reader.result));
+                        }, false);
+                        reader.readAsArrayBuffer(blob);
+
+                    } catch(err) {
+                        return reject(err);
+                    }
+
+                }, 'image/png');
+
+            });
         })
     })
 }
@@ -36,8 +57,8 @@ function getPagesAsPng(pdfDocument, options = {}) {
 function pageToSvg(pdfDocument, pageNumber, {
     xHmtlCompatible = false,
     asString        = true,
-    asHtml          = true,
-    embedFonts      = true, // All the fonts will be embedded directly to the SVG element in base64 string,
+    wrapInHtml      = true,
+    embedFonts      = false,
     scale           = 1.0
 }) {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
@@ -51,17 +72,7 @@ function pageToSvg(pdfDocument, pageNumber, {
                 if(asString) {
                     const svgString = !xHmtlCompatible ? svgElement.outerHTML.replace(/svg:/g, '') : svgElement.outerHTML;
 
-                    return asHtml ? `
-                        <html>
-                            <head>
-                            
-                            </head>
-                            <body>
-                                ${svgString}
-                            </body>
-                        </html>
-                        
-                    ` : svgString;
+                    return wrapInHtml ? `<html ${xHmtlCompatible ? 'xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg"' : ''}><head></head><body>${svgString}</body></html>` : svgString;
                 }
                 return svgElement;
             })

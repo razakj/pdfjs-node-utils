@@ -1,2 +1,2 @@
 # pdfjs-node-utils
-PDF.js utilities for use with Node.JS
+A set of PDF tools using PDF.js, jsdom and canvas.
