@@ -1,7 +1,7 @@
 const fs = require('fs');
-const {pages, documents} = require('../src/index');
+const {pages} = require('../src/index');
 
-const FILE_PATH             = 'path/to/pdf';
+const FILE_PATH             = 'path/to/file';
 const OUTPUT_FILES_FOLER    = 'output/folder';
 
 try {
@@ -9,18 +9,18 @@ try {
 
     async function pdfToSvg() {
         try {
-            const pdfDocument   = await documents.pdfToDocument(pdfFile);
-            const svgPages      = await pages.getPagesAsSvg(pdfDocument);
+            const svgPages      = await pages.getPagesAsSvg(pdfFile);
 
             await Promise.all(svgPages.map((svgPage, ix) => new Promise((resolve, reject) => {
-                fs.writeFile(`${OUTPUT_FILES_FOLER}/page_${ix+1}.html`, svgPage, function(err) {
+                fs.writeFile(`${OUTPUT_FILES_FOLER}/page_${ix+1}.svg`, svgPage, function(err) {
                     if(err) return reject(err);
 
                     return resolve();
                 })
             })));
         } catch(pdfErr) {
-            throw pdfErr;
+            console.error(pdfErr);
+            process.exit(-1);
         }
     }
 

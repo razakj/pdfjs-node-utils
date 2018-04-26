@@ -1,8 +1,33 @@
-const pdfjsLib  = require('pdfjs-dist');
-const {JSDOM}   = require('jsdom');
+const pdfjsLib          = require('pdfjs-dist');
+const {JSDOM}           = require('jsdom');
+const imagemin          = require('imagemin');
+const imageminPngquant  = require('imagemin-pngquant');
+
+const _htmlWrapper = (content, htmlAttributes) => `<html ${htmlAttributes}><head></head><body>${content}</body></html>`;
+
+
+function _getDocument(options = {}) {
+    if(!options.data) return Promise.reject('PDF data must be provided');
+
+    return pdfjsLib.getDocument(Object.assign({}, options, {
+        verbosity: 0
+    }))
+}
+
+function _processPages(pdfDocument, options, processCallback) {
+    let gets = [];
+
+    for(let i = 1; i <= pdfDocument.numPages; i++) {
+        gets.push(processCallback(pdfDocument, i, options));
+    }
+
+    return Promise.all(gets);
+}
 
 function pageToPng(pdfDocument, pageNumber, {
-    scale           = 1.0
+    scale           = 1.0,
+    compress        = true,
+    compressQuality = 100
 }) {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
 
@@ -16,7 +41,8 @@ function pageToPng(pdfDocument, pageNumber, {
 
         return pdfPage.render({
             canvasContext   : context,
-            viewport        : viewport
+            viewport        : viewport,
+            verbosity       : 0,
         }).then(()=>{
             return new Promise((resolve, reject) => {
                 canvas.toBlob(function(blob) {
@@ -26,7 +52,23 @@ function pageToPng(pdfDocument, pageNumber, {
 
                         reader.addEventListener('loadend', (ev) => {
                             if(ev.error) return reject(ev.error);
-                            return resolve(Buffer.from(reader.result));
+
+                            const buffer = Buffer.from(reader.result);
+
+                            if(compress) {
+                                imagemin.buffer(buffer, {
+                                    plugins: [
+                                        imageminPngquant({
+                                            quality : compressQuality
+                                        })
+                                    ]
+                                }).then( compressedBuffer => {
+                                    resolve(compressedBuffer);
+                                });
+                            } else {
+                                resolve(buffer);
+                            }
+
                         }, false);
                         reader.readAsArrayBuffer(blob);
 
@@ -42,22 +84,19 @@ function pageToPng(pdfDocument, pageNumber, {
 }
 
 
-function getPagesAsPng(pdfDocument, options = {}) {
-    if(!pdfDocument) return Promise.reject('pdfDocument must be provided');
-
-    let getPngs = [];
-
-    for(let i = 1; i <= pdfDocument.numPages; i++) {
-        getPngs.push(pageToPng(pdfDocument, i, options));
-    }
-
-    return Promise.all(getPngs);
+function getPagesAsPng(pdfInput, options = {}) {
+    return _getDocument({
+        data                        : pdfInput,
+        disableFontFace             : true,
+        nativeImageDecoderSupport   : 'none'
+    }).then(pdfDocument=>{
+        return _processPages(pdfDocument, options, pageToPng);
+    });
 }
 
 function pageToSvg(pdfDocument, pageNumber, {
     xHmtlCompatible = false,
     asString        = true,
-    wrapInHtml      = true,
     embedFonts      = false,
     scale           = 1.0
 }) {
@@ -70,9 +109,9 @@ function pageToSvg(pdfDocument, pageNumber, {
 
             return svgGfx.getSVG(opList, viewport).then(svgElement=>{
                 if(asString) {
-                    const svgString = !xHmtlCompatible ? svgElement.outerHTML.replace(/svg:/g, '') : svgElement.outerHTML;
-
-                    return wrapInHtml ? `<html ${xHmtlCompatible ? 'xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg"' : ''}><head></head><body>${svgString}</body></html>` : svgString;
+                    return Promise.resolve(
+                        !xHmtlCompatible ? svgElement.outerHTML.replace(/svg:/g, '') : svgElement.outerHTML
+                    );
                 }
                 return svgElement;
             })
@@ -80,16 +119,44 @@ function pageToSvg(pdfDocument, pageNumber, {
     })
 }
 
-function getPagesAsSvg(pdfDocument, options = {}) {
-    if(!pdfDocument) return Promise.reject('pdfDocument must be provided');
+function getPagesAsSvg(pdfInput, options = {}) {
+    return _getDocument({
+        data                        : pdfInput,
+        embedFonts                  : true,
+        disableFontFace             : false,
+        nativeImageDecoderSupport   : 'none'
+    }).then(pdfDocument=>{
+        return _processPages(pdfDocument, options, pageToSvg);
+    });
+}
 
-    let getSvgs = [];
+function getPagesAsHtml(pdfInput, options = {}) {
 
-    for(let i = 1; i <= pdfDocument.numPages; i++) {
-        getSvgs.push(pageToSvg(pdfDocument, i, options));
+    const {usePng} = options;
+
+    if(usePng) {
+        return getPagesAsPng(pdfInput, options).then(pngBuffers=>{
+            return Promise.resolve(pngBuffers
+                .map(b=>_htmlWrapper(`<img src="data:image/png;base64,${b.toString('base64')}"></img>`))
+            );
+        });
+    } else {
+        return getPagesAsSvg(pdfInput, Object.assign({}, options, {
+            asString: true
+        })).then(svgs=>{
+
+            const {xHmtlCompatible} = options;
+
+            return Promise.resolve(svgs
+                .map(svg=>
+                    _htmlWrapper(
+                        svg,
+                        xHmtlCompatible ? 'xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg"' : '')
+                )
+            );
+        });
     }
 
-    return Promise.all(getSvgs);
 }
 
 module.exports.getPagesAsPng    = getPagesAsPng;
@@ -97,3 +164,5 @@ module.exports.pageToPng        = pageToPng;
 
 module.exports.getPagesAsSvg    = getPagesAsSvg;
 module.exports.pageToSvg        = pageToSvg;
+
+module.exports.getPagesAsHtml   = getPagesAsHtml;

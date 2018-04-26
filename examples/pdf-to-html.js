@@ -7,15 +7,14 @@ const OUTPUT_FILES_FOLER    = 'output/folder';
 try {
     const pdfFile = fs.readFileSync(FILE_PATH);
 
-    async function pdfToPng() {
+    async function pdfToHtml() {
         try {
-            const pngPages      = await pages.getPagesAsPng(pdfFile, {
-                scale               : 1.4,
-                compressQuality     : 10
+            const htmlPages      = await pages.getPagesAsHtml(pdfFile, {
+                usePng: true
             });
 
-            return await Promise.all(pngPages.map((pngPage, ix) => new Promise((resolve, reject) => {
-                fs.writeFile(`${OUTPUT_FILES_FOLER}/page_${ix+1}.png`, pngPage, function(err) {
+            await Promise.all(htmlPages.map((svgPage, ix) => new Promise((resolve, reject) => {
+                fs.writeFile(`${OUTPUT_FILES_FOLER}/page_${ix+1}.html`, svgPage, function(err) {
                     if(err) return reject(err);
 
                     return resolve();
@@ -27,7 +26,7 @@ try {
         }
     }
 
-    pdfToPng();
+    pdfToHtml();
 } catch(err) {
     console.error(err);
     process.exit(-1)
