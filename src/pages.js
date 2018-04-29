@@ -64,7 +64,7 @@ function pageToPng(pdfDocument, pageNumber, {
                                     ]
                                 }).then( compressedBuffer => {
                                     resolve(compressedBuffer);
-                                });
+                                }).catch(reject)
                             } else {
                                 resolve(buffer);
                             }
