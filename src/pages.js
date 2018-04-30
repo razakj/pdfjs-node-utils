@@ -73,7 +73,10 @@ function pageToPng(pdfDocument, pageNumber, {
                         const reader = new window.FileReader();
 
                         reader.addEventListener('loadend', (ev) => {
-                            if(ev.error) return reject(ev.error);
+                            if(ev.error) {
+                                console.error(`An error occurred while converting a PNG image - ${ev.error ? ev.error.message : 'Unknown error'}`);
+                                reject(ev.error);
+                            }
 
                             const buffer = Buffer.from(reader.result);
 
@@ -86,7 +89,10 @@ function pageToPng(pdfDocument, pageNumber, {
                                     ]
                                 }).then( compressedBuffer => {
                                     resolve(compressedBuffer);
-                                }).catch(reject)
+                                }).catch(err=> {
+                                    console.error(`An error occurred while compressing a PNG image - ${err.message}`);
+                                    reject(err);
+                                })
                             } else {
                                 resolve(buffer);
                             }
@@ -95,6 +101,7 @@ function pageToPng(pdfDocument, pageNumber, {
                         reader.readAsArrayBuffer(blob);
 
                     } catch(err) {
+                        console.error(`Unable to process a PNG image BLOB - ${err.message}`);
                         return reject(err);
                     }
 
