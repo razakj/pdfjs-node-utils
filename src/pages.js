@@ -15,13 +15,35 @@ function _getDocument(options = {}) {
 }
 
 function _processPages(pdfDocument, options, processCallback) {
-    let gets = [];
 
-    for(let i = 1; i <= pdfDocument.numPages; i++) {
-        gets.push(processCallback(pdfDocument, i, options));
-    }
+    let convertedPages = [];
+    let noOfBatches = Math.max(1, pdfDocument.numPages / 10);
 
-    return Promise.all(gets);
+    const _processBatch = batchNo => {
+        let getPages = [];
+        let start    = (batchNo * 10) + 1;
+        let end      = start + 9;
+
+        for(start; start <= end; start++) {
+
+            if(pdfDocument.numPages < start) break;
+
+            getPages.push(processCallback(pdfDocument, start, options));
+        }
+
+        return Promise.all(getPages).then(batchedPages=>{
+
+            convertedPages.push(...batchedPages);
+
+            if(batchNo === (noOfBatches - 1)) {
+                return Promise.resolve(convertedPages);
+            } else {
+                return _processBatch(batchNo+1)
+            }
+        });
+    };
+
+    return _processBatch(0);
 }
 
 function pageToPng(pdfDocument, pageNumber, {
