@@ -5,6 +5,13 @@ const imageminPngquant  = require('imagemin-pngquant');
 
 const _htmlWrapper = (content, htmlAttributes) => `<html ${htmlAttributes}><head></head><body>${content}</body></html>`;
 
+function _getPageText(page) {
+    if(!page) return Promire.reject('Page must be provided to _getText function');
+
+    return page.getTextContent().then(({items}) => {
+        return Promise.resolve(items.map(i=>i.str).join(''));
+    });
+}
 
 function _getDocument(options = {}) {
     if(!options.data) return Promise.reject('PDF data must be provided');
@@ -15,7 +22,6 @@ function _getDocument(options = {}) {
 }
 
 function _processPages(pdfDocument, options, processCallback) {
-
     let convertedPages = [];
     let noOfBatches = Math.max(1, Math.ceil(pdfDocument.numPages / 10));
 
@@ -47,6 +53,7 @@ function pageToPng(pdfDocument, pageNumber, {
     scale               = 1.0,
     compress            = true,
     compressQuality     = 100,
+    extractTextContent  = false
 }) {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
 
@@ -58,11 +65,14 @@ function pageToPng(pdfDocument, pageNumber, {
 
         const context           = canvas.getContext('2d');
 
-        return pdfPage.render({
-            canvasContext   : context,
-            viewport        : viewport,
-            verbosity       : 0,
-        }).then(()=>{
+        return Promise.all([
+            pdfPage.render({
+                canvasContext   : context,
+                viewport        : viewport,
+                verbosity       : 0,
+            }),
+            extractTextContent ? _getPageText(pdfPage) : Promise.resolve()
+        ]).then(([rendered, textContent])=>{
             return new Promise((resolve, reject) => {
                 canvas.toBlob(function(blob) {
                     try {
@@ -85,13 +95,13 @@ function pageToPng(pdfDocument, pageNumber, {
                                         })
                                     ]
                                 }).then( compressedBuffer => {
-                                    resolve(compressedBuffer);
+                                    resolve([compressedBuffer, textContent]);
                                 }).catch(err=> {
                                     console.error(`An error occurred while compressing a PNG image - ${err.message}`);
                                     reject(err);
                                 })
                             } else {
-                                resolve(buffer);
+                                resolve([buffer, textContent]);
                             }
 
                         }, false);
@@ -124,7 +134,8 @@ function pageToSvg(pdfDocument, pageNumber, {
     xHmtlCompatible = false,
     asString        = true,
     embedFonts      = false,
-    scale           = 1.0
+    scale           = 1.0,
+    extractTextContent  = false
 }) {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
         return pdfPage.getOperatorList().then(opList=>{
@@ -133,13 +144,17 @@ function pageToSvg(pdfDocument, pageNumber, {
             const svgGfx            = new pdfjsLib.SVGGraphics(pdfPage.commonObjs, pdfPage.objs);
             svgGfx.embedFonts       = embedFonts;
 
-            return svgGfx.getSVG(opList, viewport).then(svgElement=>{
+            return Promise.all([
+                svgGfx.getSVG(opList, viewport),
+                extractTextContent ? _getPageText(pdfPage) : Promise.resolve()
+            ]).then(([svgElement, textContent])=>{
                 if(asString) {
-                    return Promise.resolve(
-                        !xHmtlCompatible ? svgElement.outerHTML.replace(/svg:/g, '') : svgElement.outerHTML
-                    );
+                    return Promise.resolve([
+                        !xHmtlCompatible ? svgElement.outerHTML.replace(/svg:/g, '') : svgElement.outerHTML,
+                        textContent
+                    ]);
                 }
-                return svgElement;
+                return Promise.resolve([svgElement, textContent]);
             })
         })
     })
@@ -161,9 +176,16 @@ function getPagesAsHtml(pdfInput, options = {}) {
     const {usePng} = options;
 
     if(usePng) {
-        return getPagesAsPng(pdfInput, options).then(pngBuffers=>{
-            return Promise.resolve(pngBuffers
-                .map(b=>_htmlWrapper(`<img src="data:image/png;base64,${b.toString('base64')}"></img>`))
+        return getPagesAsPng(pdfInput, options).then(pngs=>{
+            return Promise.resolve(pngs
+                .map(([buffer, textContent])=>
+                    (
+                        [
+                            _htmlWrapper(`<img src="data:image/png;base64,${b.toString('base64')}"></img>`),
+                            textContent
+                        ]
+                    )
+                )
             );
         });
     } else {
@@ -174,10 +196,13 @@ function getPagesAsHtml(pdfInput, options = {}) {
             const {xHmtlCompatible} = options;
 
             return Promise.resolve(svgs
-                .map(svg=>
-                    _htmlWrapper(
-                        svg,
-                        xHmtlCompatible ? 'xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg"' : '')
+                .map(([buffer, textContent])=>
+                    (
+                        [
+                            _htmlWrapper(buffer, xHmtlCompatible ? 'xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg"' : ''),
+                            textContent
+                        ]
+                    )
                 )
             );
         });

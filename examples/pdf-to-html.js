@@ -13,7 +13,7 @@ try {
                 usePng: true
             });
 
-            await Promise.all(htmlPages.map((svgPage, ix) => new Promise((resolve, reject) => {
+            await Promise.all(htmlPages.map(([svgPage, textContent], ix) => new Promise((resolve, reject) => {
                 fs.writeFile(`${OUTPUT_FILES_FOLER}/page_${ix+1}.html`, svgPage, function(err) {
                     if(err) return reject(err);
 

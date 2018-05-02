@@ -11,10 +11,11 @@ try {
         try {
             const pngPages      = await pages.getPagesAsPng(pdfFile, {
                 scale               : 1.4,
-                compressQuality     : 10
+                compressQuality     : 10,
+                extractTextContent  : true
             });
 
-            return await Promise.all(pngPages.map((pngPage, ix) => new Promise((resolve, reject) => {
+            return await Promise.all(pngPages.map(([pngPage, textContent], ix) => new Promise((resolve, reject) => {
                 fs.writeFile(`${OUTPUT_FILES_FOLER}/page_${ix+1}.png`, pngPage, function(err) {
                     if(err) return reject(err);
 

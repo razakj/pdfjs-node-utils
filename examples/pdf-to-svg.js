@@ -9,9 +9,11 @@ try {
 
     async function pdfToSvg() {
         try {
-            const svgPages      = await pages.getPagesAsSvg(pdfFile);
+            const svgPages      = await pages.getPagesAsSvg(pdfFile, {
+                extractTextContent: true
+            });
 
-            await Promise.all(svgPages.map((svgPage, ix) => new Promise((resolve, reject) => {
+            await Promise.all(svgPages.map(([svgPage, textContent], ix) => new Promise((resolve, reject) => {
                 fs.writeFile(`${OUTPUT_FILES_FOLER}/page_${ix+1}.svg`, svgPage, function(err) {
                     if(err) return reject(err);
 
