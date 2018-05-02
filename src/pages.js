@@ -17,17 +17,14 @@ function _getDocument(options = {}) {
 function _processPages(pdfDocument, options, processCallback) {
 
     let convertedPages = [];
-    let noOfBatches = Math.max(1, pdfDocument.numPages / 10);
+    let noOfBatches = Math.max(1, Math.ceil(pdfDocument.numPages / 10));
 
     const _processBatch = batchNo => {
         let getPages = [];
         let start    = (batchNo * 10) + 1;
-        let end      = start + 9;
+        let end      = Math.min(start + 9, pdfDocument.numPages - 1);
 
         for(start; start <= end; start++) {
-
-            if(pdfDocument.numPages < start) break;
-
             getPages.push(processCallback(pdfDocument, start, options));
         }
 
@@ -47,9 +44,9 @@ function _processPages(pdfDocument, options, processCallback) {
 }
 
 function pageToPng(pdfDocument, pageNumber, {
-    scale           = 1.0,
-    compress        = true,
-    compressQuality = 100
+    scale               = 1.0,
+    compress            = true,
+    compressQuality     = 100,
 }) {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
 
