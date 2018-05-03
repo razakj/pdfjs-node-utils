@@ -28,7 +28,7 @@ function _processPages(pdfDocument, options, processCallback) {
     const _processBatch = batchNo => {
         let getPages = [];
         let start    = (batchNo * 10) + 1;
-        let end      = Math.min(start + 9, pdfDocument.numPages - 1);
+        let end      = Math.min(start + 9, pdfDocument.numPages);
 
         for(start; start <= end; start++) {
             getPages.push(processCallback(pdfDocument, start, options));
