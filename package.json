@@ -4,7 +4,9 @@
   "description": "PDF.js utilities for use with Node.JS",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "repository": {
     "type": "git",
@@ -27,6 +29,8 @@
     "imagemin": "^5.3.1",
     "imagemin-pngquant": "^5.1.0",
     "jsdom": "^11.11.0",
-    "pdfjs-dist": "^2.0.489"
-  }
+    "pdfjs-dist": "^2.0.489",
+    "snyk": "^1.104.2"
+  },
+  "snyk": true
 }
