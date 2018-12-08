@@ -26,7 +26,7 @@
     "canvas": "^1.6.11",
     "imagemin": "^5.3.1",
     "imagemin-pngquant": "^5.1.0",
-    "jsdom": "^11.11.0",
+    "jsdom": "^11.9.0",
     "pdfjs-dist": "^2.0.489"
   }
 }
