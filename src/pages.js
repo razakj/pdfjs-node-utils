@@ -52,6 +52,7 @@ function _processPages(pdfDocument, options, processCallback) {
 function pageToPng(pdfDocument, pageNumber, {
     scale               = 1.0,
     compress            = true,
+    compressQuality       = [0, 1],
     extractTextContent  = false
 }) {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
@@ -90,7 +91,7 @@ function pageToPng(pdfDocument, pageNumber, {
                                 imagemin.buffer(buffer, {
                                     plugins: [
                                         imageminPngquant({
-                                            quality : [0, 1]
+                                            quality : compressQuality
                                         })
                                     ]
                                 }).then( compressedBuffer => {
