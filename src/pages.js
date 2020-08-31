@@ -1,4 +1,4 @@
-const pdfjsLib          = require('pdfjs-dist');
+const pdfjsLib          = require('pdfjs-dist/es5/build/pdf');
 const {JSDOM}           = require('jsdom');
 const imagemin          = require('imagemin');
 const imageminPngquant  = require('imagemin-pngquant');
@@ -18,7 +18,7 @@ function _getDocument(options = {}) {
 
     return pdfjsLib.getDocument(Object.assign({}, options, {
         verbosity: 0
-    }))
+    })).promise;
 }
 
 function _processPages(pdfDocument, options, processCallback) {
@@ -57,7 +57,7 @@ function pageToPng(pdfDocument, pageNumber, {
 }) {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
 
-        const viewport          = pdfPage.getViewport(scale);
+        const viewport          = pdfPage.getViewport({scale});
         const canvas            = document.createElement('canvas');
 
         canvas.width            = viewport.width;
@@ -70,7 +70,7 @@ function pageToPng(pdfDocument, pageNumber, {
                 canvasContext   : context,
                 viewport        : viewport,
                 verbosity       : 0,
-            }),
+            }).promise,
             extractTextContent ? _getPageText(pdfPage) : Promise.resolve()
         ]).then(([rendered, textContent])=>{
             return new Promise((resolve, reject) => {
@@ -140,7 +140,7 @@ function pageToSvg(pdfDocument, pageNumber, {
     return pdfDocument.getPage(pageNumber).then(pdfPage=>{
         return pdfPage.getOperatorList().then(opList=>{
 
-            const viewport          = pdfPage.getViewport(scale);
+            const viewport          = pdfPage.getViewport({scale});
             const svgGfx            = new pdfjsLib.SVGGraphics(pdfPage.commonObjs, pdfPage.objs);
             svgGfx.embedFonts       = embedFonts;
 
