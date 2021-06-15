@@ -1,4 +1,4 @@
-const pdfjsLib          = require('pdfjs-dist/es5/build/pdf');
+const pdfjsLib          = require('pdfjs-dist/legacy/build/pdf');
 const {JSDOM}           = require('jsdom');
 const imagemin          = require('imagemin');
 const imageminPngquant  = require('imagemin-pngquant');
