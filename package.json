@@ -24,7 +24,7 @@
   "homepage": "https://github.com/razakj/pdfjs-node-utils#readme",
   "dependencies": {
     "canvas": "^2.6.1",
-    "imagemin": "^7.0.1",
+    "imagemin": "^8.0.1",
     "imagemin-pngquant": "^9.0.0",
     "jsdom": "^16.4.0",
     "pdfjs-dist": "^2.4.456"
