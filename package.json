@@ -27,6 +27,6 @@
     "imagemin": "^7.0.1",
     "imagemin-pngquant": "^9.0.0",
     "jsdom": "^16.4.0",
-    "pdfjs-dist": "^2.4.456"
+    "pdfjs-dist": "^4.2.67"
   }
 }
